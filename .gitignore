@@ -1,1 +1,7 @@
 FULL_PLAN.md
+.env
+.env.local
+.venv/
+venv/
+__pycache__/
+*.pyc
