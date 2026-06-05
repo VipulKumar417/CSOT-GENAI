@@ -44,25 +44,13 @@ To address token budgets and prevent context window issues, `chatbot.py` support
 
 ## How to Run & Verify
 
-1. **Verify Dependencies**:
-   Ensure `openai` and `python-dotenv` are installed:
+1. **Install Dependencies**:
    ```bash
-   pip install -r requirements.txt
+   pip install openai python-dotenv
    ```
 
-2. **Verify API Configuration**:
-   Ensure `.env` contains:
-   ```env
-   OPENROUTER_API_KEY=your_actual_key_here
-   ```
-
-3. **Launch the Chatbot**:
-   Run the submission file directly:
+2. **Launch the Chatbot**:
    ```bash
    python chatbot.py
    ```
 
-4. **Interact**:
-   - Provide a model name (e.g. `deepseek/deepseek-v4-flash:free` or press enter for default).
-   - Enter your prompt limit and choose overflow policies.
-   - Run commands like `/history` and `/tokens` to inspect the internal state!
