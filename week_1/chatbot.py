@@ -45,6 +45,7 @@ class ChatAgent:
         self.messages = [
             {"role": "system", "content": self.system_instruction}
         ]
+        self.history_filename = "chat_history.json"
         
         # Token metrics tracking
         self.total_input_tokens = 0
@@ -52,6 +53,29 @@ class ChatAgent:
         
         self.client = None
         self._init_client()
+
+    def save_history(self):
+        """Saves current messages history to chat_history.json file."""
+        try:
+            import json
+            with open(self.history_filename, "w", encoding="utf-8") as f:
+                json.dump(self.messages, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"{RED}Error saving conversation: {e}{RESET}")
+
+    def load_history(self):
+        """Loads messages history from chat_history.json file."""
+        try:
+            if os.path.exists(self.history_filename):
+                import json
+                with open(self.history_filename, "r", encoding="utf-8") as f:
+                    loaded_messages = json.load(f)
+                    if isinstance(loaded_messages, list) and len(loaded_messages) > 0:
+                        self.messages = loaded_messages
+                        return True
+        except Exception as e:
+            print(f"{RED}Error loading conversation: {e}{RESET}")
+        return False
 
     def _init_client(self):
         """Initialize the raw OpenAI client targeting OpenRouter."""
@@ -77,10 +101,12 @@ class ChatAgent:
         self.messages = [
             {"role": "system", "content": self.system_instruction}
         ]
+        self.save_history()
 
     def add_message(self, role: str, content: str):
         """Manually append a message to the conversation history."""
         self.messages.append({"role": role, "content": content})
+        self.save_history()
 
     def get_raw_history(self):
         """Returns the current raw history list for debugging/inspection."""
@@ -106,6 +132,7 @@ class ChatAgent:
             system_msg = [m for m in self.messages if m["role"] == "system"]
             remaining_msgs = non_system_messages[excess_turns * 2:]
             self.messages = system_msg + remaining_msgs
+            self.save_history()
             
         elif self.context_policy == "summarize":
             print(f"\n{YELLOW}[Context Manager]: Exceeded max history limit ({self.max_history_turns} turns). "
@@ -158,6 +185,7 @@ class ChatAgent:
             }
             
             self.messages = system_msg + [summary_message] + remaining_messages
+            self.save_history()
             print(f"{GREEN}Compaction complete! Oldest {turns_to_compact} turns replaced by summary.{RESET}")
         except Exception as e:
             print(f"{RED}Failed to compact history: {e}. Keeping history as-is.{RESET}")
@@ -260,6 +288,21 @@ def run_chatbot():
             context_policy=policy,
             max_history_turns=max_turns
         )
+        
+        # Check if saved history exists and ask to load
+        if os.path.exists(agent.history_filename):
+            try:
+                import json
+                with open(agent.history_filename, "r", encoding="utf-8") as f:
+                    temp_msgs = json.load(f)
+                if isinstance(temp_msgs, list) and len(temp_msgs) > 1:
+                    resume = input(f"{YELLOW}Found existing chat history. Do you want to resume? (y/n) [y]: {RESET}").strip().lower()
+                    if resume != 'n':
+                        if agent.load_history():
+                            print(f"{GREEN}Previous conversation history loaded successfully!{RESET}")
+            except Exception:
+                pass
+                
         print(f"{GREEN}Success! Agent initialized. Start typing your prompts.{RESET}")
         print("----------------------------------------------------------------------")
         

@@ -5,3 +5,4 @@ FULL_PLAN.md
 venv/
 __pycache__/
 *.pyc
+chat_history.json
