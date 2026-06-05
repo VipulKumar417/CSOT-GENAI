@@ -14,10 +14,6 @@ except ImportError:
 
 
 class ChatAgent:
-    """
-    ChatAgent manages conversation history manually and sends requests to the 
-    stateless OpenRouter API via the OpenAI client library.
-    """
     def __init__(self, model: str = None, 
                  system_instruction: str = "You are a helpful assistant.", 
                  max_history_turns: int = 5, context_policy: str = "drop"):
@@ -44,7 +40,6 @@ class ChatAgent:
         self._init_client()
 
     def save_history(self):
-        """Saves current messages history to chat_history.json file."""
         try:
             with open(self.history_filename, "w", encoding="utf-8") as f:
                 json.dump(self.messages, f, indent=2, ensure_ascii=False)
@@ -52,7 +47,6 @@ class ChatAgent:
             print(f"Error saving conversation: {e}")
 
     def load_history(self):
-        """Loads messages history from chat_history.json file."""
         try:
             if os.path.exists(self.history_filename):
                 with open(self.history_filename, "r", encoding="utf-8") as f:
@@ -65,7 +59,6 @@ class ChatAgent:
         return False
 
     def _init_client(self):
-        """Initialize the OpenAI client targeting OpenRouter."""
         if not OPENAI_AVAILABLE:
             raise ImportError(
                 "Error: 'openai' package is not installed. "
@@ -84,25 +77,19 @@ class ChatAgent:
         )
 
     def reset_history(self):
-        """Clears the conversational history, resetting to only the system prompt."""
         self.messages = [
             {"role": "system", "content": self.system_instruction}
         ]
         self.save_history()
 
     def add_message(self, role: str, content: str):
-        """Manually append a message to the conversation history."""
         self.messages.append({"role": role, "content": content})
         self.save_history()
 
     def get_raw_history(self):
-        """Returns the current raw history list."""
         return self.messages
 
     def manage_context_length(self):
-        """
-        Manages the length of the conversation history manually based on turns limit.
-        """
         non_system_messages = [m for m in self.messages if m["role"] != "system"]
         turns_count = len(non_system_messages) // 2
         
@@ -235,16 +222,24 @@ Commands:
 
 def choose_configuration():
     config_filename = "chat_config.json"
-    saved_model = "openrouter/free"
+    saved_model = "google/gemini-2.5-flash:free"
     saved_policy = "summarize"
     saved_max_turns = 5
     has_saved_config = False
+    
+    # Friendly name mapping to OpenRouter model IDs
+    model_mapping = {
+        "1": ("Gemini 2.5 Flash", "google/gemini-2.5-flash:free"),
+        "2": ("Llama 3.2 3B", "meta-llama/llama-3.2-3b-instruct:free"),
+        "3": ("Qwen 2.5 Coder 32B", "qwen/qwen-2.5-coder-32b-instruct:free"),
+        "4": ("DeepSeek R1 Distill Llama 8B", "deepseek/deepseek-r1-distill-llama-8b:free"),
+    }
     
     if os.path.exists(config_filename):
         try:
             with open(config_filename, "r", encoding="utf-8") as f:
                 config_data = json.load(f)
-            saved_model = config_data.get("model", "openrouter/free")
+            saved_model = config_data.get("model", "google/gemini-2.5-flash:free")
             saved_policy = config_data.get("policy", "summarize")
             saved_max_turns = config_data.get("max_turns", 5)
             has_saved_config = True
@@ -252,18 +247,37 @@ def choose_configuration():
             pass
             
     if has_saved_config:
+        # Resolve friendly name for display
+        display_model = saved_model
+        for k, v in model_mapping.items():
+            if v[1] == saved_model:
+                display_model = f"{v[0]} ({saved_model})"
+                break
         print("Saved Configuration Found:")
-        print(f"  Model:  {saved_model}")
+        print(f"  Model:  {display_model}")
         print(f"  Policy: {saved_policy}")
         print(f"  Turns:  {saved_max_turns}")
         use_last = input("Use last configuration? (y/n) [y]: ").strip().lower()
         if use_last != 'n':
             return saved_model, saved_policy, saved_max_turns
             
-    print("\nStep 1: Enter OpenRouter Model Name")
-    default_model = "openrouter/free"
-    model_input = input(f"Enter model ID (leave blank for default '{default_model}'): ").strip()
-    model = model_input if model_input else default_model
+    print("\nStep 1: Select OpenRouter Model")
+    for key, val in model_mapping.items():
+        print(f"  {key}) {val[0]}")
+    print("  5) Custom model ID")
+    
+    model_choice = input("Select model [1-5, default 1]: ").strip()
+    if not model_choice:
+        model_choice = "1"
+        
+    if model_choice in model_mapping:
+        model = model_mapping[model_choice][1]
+    elif model_choice == "5":
+        model = input("Enter custom OpenRouter model ID: ").strip()
+        if not model:
+            model = "google/gemini-2.5-flash:free"
+    else:
+        model = "google/gemini-2.5-flash:free"
     
     print("\nStep 2: Choose Context Management Policy")
     print("1) Drop Oldest Turns (Removes old user-assistant pairs)")
