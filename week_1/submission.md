@@ -40,6 +40,11 @@ To address token budgets and prevent context window issues, `chatbot.py` support
   - `/history`: Displays the raw, manually managed messages array structure to view role alternation.
   - `/policy`: Dynamically toggles context management policies (Drop vs Summarize).
 
+### 4. Persistence & Configuration Caching
+- **History Auto-Saving**: The messages array is automatically saved to a local `chat_history.json` after every turn, allowing you to resume your conversation if you close the terminal.
+- **Config caching**: Your configuration choices are saved to `chat_config.json` so that you can press **Enter** on subsequent startups to skip the setup prompts.
+- **Safety**: Both files are added to `.gitignore` to ensure your personal chat history and configs are never uploaded to GitHub.
+
 ---
 
 ## How to Run & Verify
