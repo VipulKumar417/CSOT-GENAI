@@ -253,7 +253,35 @@ Commands:
 
 
 def choose_configuration():
-    print(f"{BOLD}Step 1: Enter OpenRouter Model Name{RESET}")
+    # Try loading previously saved configuration
+    config_filename = "chat_config.json"
+    saved_model = "openrouter/free"
+    saved_policy = "summarize"
+    saved_max_turns = 5
+    has_saved_config = False
+    
+    if os.path.exists(config_filename):
+        try:
+            import json
+            with open(config_filename, "r", encoding="utf-8") as f:
+                config_data = json.load(f)
+            saved_model = config_data.get("model", "openrouter/free")
+            saved_policy = config_data.get("policy", "summarize")
+            saved_max_turns = config_data.get("max_turns", 5)
+            has_saved_config = True
+        except Exception:
+            pass
+            
+    if has_saved_config:
+        print(f"{BOLD}Saved Configuration Found:{RESET}")
+        print(f"  Model:  {GREEN}{saved_model}{RESET}")
+        print(f"  Policy: {GREEN}{saved_policy}{RESET}")
+        print(f"  Turns:  {GREEN}{saved_max_turns}{RESET}")
+        use_last = input(f"{YELLOW}Use last configuration? (y/n) [y]: {RESET}").strip().lower()
+        if use_last != 'n':
+            return saved_model, saved_policy, saved_max_turns
+            
+    print(f"\n{BOLD}Step 1: Enter OpenRouter Model Name{RESET}")
     default_model = "openrouter/free"
     model_input = input(f"Enter model ID (leave blank for default '{GREEN}{default_model}{RESET}'): ").strip()
     model = model_input if model_input else default_model
@@ -270,6 +298,14 @@ def choose_configuration():
         max_turns = int(turns_input) if turns_input else 5
     except ValueError:
         max_turns = 5
+        
+    # Save the newly entered configuration for next time
+    try:
+        import json
+        with open(config_filename, "w", encoding="utf-8") as f:
+            json.dump({"model": model, "policy": policy, "max_turns": max_turns}, f, indent=2)
+    except Exception:
+        pass
         
     return model, policy, max_turns
 
